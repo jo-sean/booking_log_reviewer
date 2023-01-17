@@ -5,6 +5,7 @@ from event import Event
 
 
 def minute_diff_from_start_time(event):
+    """Returns the time difference from now and the start of the event"""
     now = datetime.datetime.now()
     now = now.strftime('%H:%M:%S')
 
@@ -36,19 +37,33 @@ if account.authenticate(scopes=scopes):
 schedule = account.schedule()
 calendar = schedule.get_default_calendar()
 
-q = calendar.new_query('start').greater_equal(datetime.date.today())
-q.chain('and').on_attribute('end').less_equal(datetime.date.today() + datetime.timedelta(days=1))
+# Gets the events for the day
+q = calendar.new_query('start').greater_equal(datetime.date.today() - datetime.timedelta(days=1))
+q.chain('and').on_attribute('end').less_equal(datetime.date.today())
+events = calendar.get_events(query=q, include_recurring=True)
 
-events = calendar.get_events(query=q, include_recurring=True) 
-
+# Displays each event
 for event in events:
-    print(event)
-    eventStringList = str(event).split(' ')
-    name = eventStringList[1]
-    eventStringList[7] = eventStringList[7].rstrip(')')
-    startTime = datetime.datetime.strptime(f'{eventStringList[3]} {eventStringList[5]}', '%Y-%m-%d %H:%M:%S')
-    endTime = datetime.datetime.strptime(f'{eventStringList[3]} {eventStringList[7]}', '%Y-%m-%d %H:%M:%S')
-    newEvent = Event(name, startTime, endTime)
+    eventStringList = str(event).split('(')
+    
+    # Get event name
+    eventName = eventStringList[0].rstrip(' ')
+    eventName = eventName.split(':')
+    eventName = eventName[1].lstrip(' ')
+
+    # Get event times
+    eventDetails = eventStringList[1].split(' ')
+    eventDetails[-1] = eventDetails[-1].rstrip(')')
+    startTime = datetime.datetime.strptime(f'{eventDetails[1]} {eventDetails[3]}', '%Y-%m-%d %H:%M:%S')
+    endTime = datetime.datetime.strptime(f'{eventDetails[1]} {eventDetails[5]}', '%Y-%m-%d %H:%M:%S')
+
+    # Create new event
+    newEvent = Event(eventName, startTime, endTime)
     print(f'{newEvent.name} {newEvent.startTime} {newEvent.endTime}')
-    if minute_diff_from_start_time(event) <= 5 and minute_diff_from_start_time(event) >= 0:
+
+    startTimeDiff = minute_diff_from_start_time(event)
+    print(startTimeDiff)
+
+    # Send event reminder
+    if startTimeDiff <= 5 and startTimeDiff >= 0:
         newEvent.sendReminder()
