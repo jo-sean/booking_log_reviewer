@@ -3,24 +3,6 @@ from zoneinfo import ZoneInfo
 import datetime
 from event import Event
 
-def minute_diff_from_start_time(event):
-    """Returns the time difference from now and the start of the event"""
-    now = datetime.datetime.now()
-    now = now.strftime('%H:%M:%S')
-
-    event_string = str(event)
-
-    start_index = event_string.find('from:') + 6
-    end_index = event_string.find('to:') - 1 
-    start_meeting_time = event_string[start_index:end_index]
-
-    start_obj = datetime.datetime.strptime(start_meeting_time, '%H:%M:%S')
-    now = datetime.datetime.strptime(now, '%H:%M:%S')
-
-    time_diff_min = ((start_obj - now).total_seconds())/60
-
-    return time_diff_min
-
 ZoneInfo('Pacific/Auckland')
 
 CLIENT_ID = '27a56074-e1f8-406b-b41b-fb4c99cbf612'
@@ -47,6 +29,9 @@ q = calendar.new_query('start').greater_equal(qStartDateTime)
 q.chain('and').on_attribute('end').less_equal(qEndDateTime)
 events = calendar.get_events(query=q, include_recurring=True)
 
+nEvent=0
+eventsToday = []
+
 # Displays each event
 for event in events:
     eventStringList = str(event).split('(')
@@ -65,10 +50,6 @@ for event in events:
     # Create new event
     newEvent = Event(eventName, startTime, endTime)
     print(f'{newEvent.name} {newEvent.startTime} {newEvent.endTime}')
+    eventsToday[nEvent] = newEvent
 
-    startTimeDiff = minute_diff_from_start_time(event)
-    print(startTimeDiff)
-
-    # Send event reminder
-    if startTimeDiff <= 5 and startTimeDiff >= 0 and newEvent.hasBeenReminded == False:
-        newEvent.sendReminder()
+    nEvent += 1
