@@ -1,8 +1,7 @@
 from O365 import Account, MSGraphProtocol
+from zoneinfo import ZoneInfo
 import datetime
 from event import Event
-
-
 
 def minute_diff_from_start_time(event):
     """Returns the time difference from now and the start of the event"""
@@ -22,6 +21,8 @@ def minute_diff_from_start_time(event):
 
     return time_diff_min
 
+ZoneInfo('Pacific/Auckland')
+
 CLIENT_ID = '27a56074-e1f8-406b-b41b-fb4c99cbf612'
 SECRET_ID = '5rR8Q~WbL~s-62u1ktRcAuSJCSmtrdgt7_hG8dui'
 
@@ -37,9 +38,13 @@ if account.authenticate(scopes=scopes):
 schedule = account.schedule()
 calendar = schedule.get_default_calendar()
 
+qEventDate = datetime.date.today()
+qStartDateTime= datetime.datetime(qEventDate.year, qEventDate.month, qEventDate.day, 0,0,0, tzinfo=ZoneInfo('Pacific/Auckland'))
+qEndDateTime= qStartDateTime + datetime.timedelta(days=1)
+
 # Gets the events for the day
-q = calendar.new_query('start').greater_equal(datetime.date.today() - datetime.timedelta(days=1))
-q.chain('and').on_attribute('end').less_equal(datetime.date.today())
+q = calendar.new_query('start').greater_equal(qStartDateTime)
+q.chain('and').on_attribute('end').less_equal(qEndDateTime)
 events = calendar.get_events(query=q, include_recurring=True)
 
 # Displays each event
@@ -65,5 +70,5 @@ for event in events:
     print(startTimeDiff)
 
     # Send event reminder
-    if startTimeDiff <= 5 and startTimeDiff >= 0:
+    if startTimeDiff <= 5 and startTimeDiff >= 0 and newEvent.hasBeenReminded == False:
         newEvent.sendReminder()

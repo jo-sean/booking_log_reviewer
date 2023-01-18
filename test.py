@@ -1,4 +1,8 @@
+from zoneinfo import ZoneInfo
 import datetime
 
-print(datetime.date.today())
-print(datetime.date.today() + datetime.timedelta(days=1))
+ZoneInfo('Pacific/Auckland')
+
+timeNow = datetime.datetime.now()
+
+print(timeNow)
