@@ -3,7 +3,7 @@ from zoneinfo import ZoneInfo
 import datetime
 from event import Event
 
-ZoneInfo('Pacific/Auckland')
+timezone = ZoneInfo('Pacific/Auckland')
 
 CLIENT_ID = '27a56074-e1f8-406b-b41b-fb4c99cbf612'
 SECRET_ID = '5rR8Q~WbL~s-62u1ktRcAuSJCSmtrdgt7_hG8dui'
@@ -21,7 +21,7 @@ schedule = account.schedule()
 calendar = schedule.get_default_calendar()
 
 qEventDate = datetime.date.today()
-qStartDateTime= datetime.datetime(qEventDate.year, qEventDate.month, qEventDate.day, 0,0,0, tzinfo=ZoneInfo('Pacific/Auckland'))
+qStartDateTime= datetime.datetime(qEventDate.year, qEventDate.month, qEventDate.day, 0,0,0, tzinfo=timezone)
 qEndDateTime= qStartDateTime + datetime.timedelta(days=1)
 
 # Gets the events for the day
@@ -29,7 +29,6 @@ q = calendar.new_query('start').greater_equal(qStartDateTime)
 q.chain('and').on_attribute('end').less_equal(qEndDateTime)
 events = calendar.get_events(query=q, include_recurring=True)
 
-nEvent=0
 eventsToday = []
 
 # Displays each event
@@ -50,6 +49,4 @@ for event in events:
     # Create new event
     newEvent = Event(eventName, startTime, endTime)
     print(f'{newEvent.name} {newEvent.startTime} {newEvent.endTime}')
-    eventsToday[nEvent] = newEvent
-
-    nEvent += 1
+    eventsToday.append(newEvent)
