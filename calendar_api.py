@@ -33,6 +33,7 @@ eventsToday = []
 
 # Displays each event
 for event in events:
+    print(event.body)
     eventStringList = str(event).split('(')
     
     # Get event name
