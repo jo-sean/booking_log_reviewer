@@ -9,34 +9,47 @@ dayStart = dt.time(8,30,0, tzinfo=timezone)
 dayEnd = dt.time(16,0,0, tzinfo=timezone)
 
 
-def CalculateActualTime(event):
+def CalculateBillableTime(event):
     eventStartTime = dt.strptime(event.startTime)
     eventEndTime = dt.strptime(event.endTime)
 
-    # If time is before working hours use code9 times
-    if eventStartTime < dayStart or eventStartTime > dayEnd:
-        FindActualTime(event)
-
-    # If time is after working hours use code9 times
-    if eventEndTime < dayStart or eventEndTime > dayEnd:
-        FindActualTime(event)
-
-    # If day is Saturday or Sunday use code9 times
-    if eventStartTime.weekday() > FRIDAY:
-        FindActualTime(event)
+    ###################################################################################
+    #
+    # START TIME LOGIC
+    #
+    # If event actual start time is within working hours
+    #   billable start time = booking start time
+    # If event actual start time is outside working hours
+    #   If event actual start time is >15mins before booking start time 
+    #       billable start time = actual start time
+    #   billable start time = booking start time
+    #
+    # FINISH TIME LOGIC
+    #
+    # If event actual finish time is within working hours
+    #   billable finish time = booking finish time
+    # If event actual finish time is outside working hours
+    #   If event actual finish time is >15mins before booking finish time
+    #       billable finish time = actual finish time
+    #   billable finish time = booking finish time
+    #
+    # BILLABLE TIME LOGIC
+    #
+    # Time difference billable start time and billable finish time
+    #
+    ###################################################################################
 
 def FindActualTime(event):
     ###################################################################################
-    # all day sat sun
-    # mon-fri before 08:00 and after 16:00 
     #
-    # for each open/close
-    #    calculate time difference between open/cloe time and start/end times
-    #    assign as actual start/end time for the booking with the lowest difference
-    # if actual start/end and booking start/end > 15mins 
-    #    billable start/end = actual start/end
-    # else
-    #    billable start/end = booking start/end
+    # for each day
+    #   for each open/close
+    #      calculate time difference between open/close time and start/end times
+    #      assign as actual start/end time for the booking with the lowest difference
+    #   if actual start/end and booking start/end > 15mins 
+    #      billable start/end = actual start/end
+    #   else
+    #      billable start/end = booking start/end
     ###################################################################################
 
     event.startTime = dayEnd # Get time from code9

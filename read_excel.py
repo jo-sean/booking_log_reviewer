@@ -33,7 +33,6 @@ def read_excel_file():
     #
     #
     #
-    #
     # ===> END CODE HERE
 
     # # String manipulation
