@@ -15,6 +15,15 @@ def CalculateBillableTime(event):
 
     ###################################################################################
     #
+    # Check sharepoint list for public holiday
+    # If date exists in list
+    #   publicholiday = True
+    #
+    # If public holiday or Saturday or Sunday
+    #   working hours = null
+    # Else
+    #   working hours = 08:00, 16:30
+    #
     # START TIME LOGIC
     #
     # If event actual start time is within working hours

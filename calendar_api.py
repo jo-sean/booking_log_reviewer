@@ -5,12 +5,12 @@ from event import Event
 
 timezone = ZoneInfo('Pacific/Auckland')
 
-CLIENT_ID = '27a56074-e1f8-406b-b41b-fb4c99cbf612'
-SECRET_ID = '5rR8Q~WbL~s-62u1ktRcAuSJCSmtrdgt7_hG8dui'
+CLIENT_ID = 'CLIENT_ID'
+SECRET_ID = 'SECRET_ID'
 
 credentials = (CLIENT_ID, SECRET_ID)
 
-protocol = MSGraphProtocol(defualt_resource='dominic@phillipstown.org.nz') 
+protocol = MSGraphProtocol(defualt_resource='EMAIL') 
 scopes = ['Calendars.Read', 'Calendars.Read.Shared']
 account = Account(credentials, protocol=protocol)
 
