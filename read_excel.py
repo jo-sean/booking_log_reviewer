@@ -18,6 +18,8 @@ def read_excel_file():
     # Retrieves only the file name from the path
     file_name = os.path.splitext(os.path.basename(file_name))[0]
 
+    # Get date range from code9 report 
+
     for key, value in df.items():
         df_col_2 = value[value[2].str.contains('Colliers|Linwood', case=False) == True]
         df_col_2 = df_col_2[2].str.split(' - ').str[-1]
@@ -29,11 +31,6 @@ def read_excel_file():
     filtered_df = df.loc[df[col_index].str.contains('open by|close by', case=False) == True]
     filtered_df = filtered_df.dropna(axis=1)
 
-    # RUN PROGRAM ==> ADD CODE HERE
-    #
-    #
-    #
-    # ===> END CODE HERE
 
     # # String manipulation
     # totals_user_id, totals_room_num = loop_dp(filtered_df)
@@ -45,7 +42,7 @@ def read_excel_file():
 
     # Source: https://pandas.pydata.org/docs/reference/api/pandas.DataFrame.to_csv.html
     # Source: https://pandas.pydata.org/pandas-docs/version/0.7.0/generated/pandas.DataFrame.to_csv.html
-    os.makedirs('Output Files', exist_ok=True)
+    # os.makedirs('Output Files', exist_ok=True)
     # df1.to_csv(f'Output Files/totals_per_user_{file_name}.csv',
     #            index_label=['User ID'],
     #            header=['Total Time Used'])

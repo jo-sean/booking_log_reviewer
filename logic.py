@@ -1,5 +1,7 @@
 import datetime as dt
 from zoneinfo import ZoneInfo
+from workalendar.oceania import NewZealand
+from workalendar.core import SAT, SUN
 import event
 
 timezone = ZoneInfo('Pacific/Auckland')
@@ -8,6 +10,8 @@ FRIDAY = 4
 dayStart = dt.time(8,30,0, tzinfo=timezone)
 dayEnd = dt.time(16,0,0, tzinfo=timezone)
 
+cal = NewZealand()
+
 
 def CalculateBillableTime(event):
     eventStartTime = dt.strptime(event.startTime)
@@ -15,32 +19,35 @@ def CalculateBillableTime(event):
 
     ###################################################################################
     #
-    # Check sharepoint list for public holiday
-    # If date exists in list
-    #   publicholiday = True
+    # timeRange = [startTime, finishTime]
+    # nonWorkingDay = False
+    # 
+    # CheckAllTimes()
+    # CalculateBillableHours()
+    # 
     #
-    # If public holiday or Saturday or Sunday
-    #   working hours = null
-    # Else
-    #   working hours = 08:00, 16:30
+    # CheckAllTimes()
+    #   For each entry in code9DF find most likely booking
+    #   List of time difference between code9 open and booking start
+    #   List of time difference between code9 close and booking end
+    #   Loop time differences and assign the least time difference as the actual time
+    #   If actual time unassigned; assign booking time as actual time
     #
-    # START TIME LOGIC
     #
-    # If event actual start time is within working hours
-    #   billable start time = booking start time
-    # If event actual start time is outside working hours
-    #   If event actual start time is >15mins before booking start time 
-    #       billable start time = actual start time
-    #   billable start time = booking start time
+    # CalculateBillableHours()
+    #   Check if public holiday
+    #   If date exists in list
+    #       nonWorkingDay = True
+    #   Check if weekend
+    #   If weekday > 4
+    #       nonWorkingDay = True
     #
-    # FINISH TIME LOGIC
-    #
-    # If event actual finish time is within working hours
-    #   billable finish time = booking finish time
-    # If event actual finish time is outside working hours
-    #   If event actual finish time is >15mins before booking finish time
-    #       billable finish time = actual finish time
-    #   billable finish time = booking finish time
+    #   For each entry calculate if start time is >15mins earlier than booking
+    #   If it is assign actual time as billable
+    #   Else assign booking time as billable
+    #   For each entry calculate if finish time is >15 later than booking
+    #   If it is assign actual time as billable
+    #   Else assign booking time as billable
     #
     # BILLABLE TIME LOGIC
     #
@@ -60,6 +67,14 @@ def FindActualTime(event):
     #   else
     #      billable start/end = booking start/end
     ###################################################################################
+    eventStartTime = dt.strptime(event.startTime)
+    eventEndTime = dt.strptime(event.endTime)
 
-    event.startTime = dayEnd # Get time from code9
-    event.endTime = dayStart # Get time from code9
+def CheckPublicHoliday(dateToCheck):
+    nz_holidays = cal.holidays(dateToCheck.year)
+    for holiday in nz_holidays:
+        if dateToCheck in holiday:
+            return True
+    return False
+    
+    
