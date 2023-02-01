@@ -1,6 +1,7 @@
 import pandas as pd
 import os
 from get_file import get_file_name
+from datetime import datetime
 
 
 def read_bookings_file():
@@ -13,11 +14,13 @@ def read_bookings_file():
     # Retrieves name of file being read to be used in the exports
 
     file_name = get_file_name()
-    df = pd.read_excel(file_name, sheet_name=None, header=None)
+    df = pd.read_excel(file_name, sheet_name='Bookings')
+    df = df.astype(str)
 
     # Retrieves only the file name from the path
     file_name = os.path.splitext(os.path.basename(file_name))[0]
 
-    print(df)
+    columnsToKeep = ['ID', 'Activity', 'Location', 'Start', 'End', 'Actual Time', 'Chargeable Start', 'Chargeable End']
 
-    print("Bookings opened")
+    print(df[columnsToKeep].loc[df['Start'].str.contains('2022-10-26', case=False) == True])
+    #print(df[columnsToKeep][-10:])

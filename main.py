@@ -7,7 +7,7 @@ from read_bookings import read_bookings_file
 
 
 def main():
-    read_excel_file()
+    #read_excel_file()
     read_bookings_file()
 
 
