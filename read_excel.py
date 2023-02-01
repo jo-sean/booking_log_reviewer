@@ -18,18 +18,24 @@ def read_excel_file():
     # Retrieves only the file name from the path
     file_name = os.path.splitext(os.path.basename(file_name))[0]
 
-    # Get date range from code9 report 
+    keylist = list(df.keys())
+    dateRange = df[keylist[0]].loc[df[keylist[0]][1].str.contains('From', case=False) == True][1].iat[0]
+    dateRange = dateRange.split(' ')
+    startDate = f"{dateRange[1]} {dateRange[2]} {dateRange[3]}"
+    endDate = f"{dateRange[5]} {dateRange[6]} {dateRange[7]}"
 
     for key, value in df.items():
         df_col_2 = value[value[2].str.contains('Colliers|Linwood', case=False) == True]
         df_col_2 = df_col_2[2].str.split(' - ').str[-1]
         value['Room'] = df_col_2.to_string(buf=None,index=False)
-
+    
     # Concatenate dataframes in dictionary into a single dataframe
     df = pd.concat(df)
 
     filtered_df = df.loc[df[col_index].str.contains('open by|close by', case=False) == True]
     filtered_df = filtered_df.dropna(axis=1)
+
+    print("Security Report opened")
 
 
     # # String manipulation
