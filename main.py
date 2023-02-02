@@ -2,13 +2,14 @@
 # Collab: Dominic Stewart
 # Date: 01/12/2022
 
+import config
 from read_excel import read_excel_file
 from read_bookings import read_bookings_file
 
 
 def main():
-    #read_excel_file()
-    read_bookings_file()
+    read_excel_file()
+    read_bookings_file(config.dateList)
 
 
 if __name__ == "__main__":

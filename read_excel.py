@@ -1,7 +1,7 @@
 import pandas as pd
 import os
 from get_file import get_file_name
-
+import config
 
 def read_excel_file():
     """Opens Excel file and extracts contents into dataframe,
@@ -18,11 +18,34 @@ def read_excel_file():
     # Retrieves only the file name from the path
     file_name = os.path.splitext(os.path.basename(file_name))[0]
 
+    # Get the dates included in the security report
     keylist = list(df.keys())
     dateRange = df[keylist[0]].loc[df[keylist[0]][1].str.contains('From', case=False) == True][1].iat[0]
     dateRange = dateRange.split(' ')
-    startDate = f"{dateRange[1]} {dateRange[2]} {dateRange[3]}"
-    endDate = f"{dateRange[5]} {dateRange[6]} {dateRange[7]}"
+
+    dateRange[1] = dateRange[1].split('/')
+    for i in range(len(dateRange[1])):
+        if len(dateRange[1][i]) < 2:
+            dateRange[1][i] = f'0{dateRange[1][i]}'
+    dateRange[1] = f'{dateRange[1][0]}-{dateRange[1][1]}-{dateRange[1][2]}'
+
+    dateRange[2] = dateRange[2].split(':')
+    for i in range(len(dateRange[2])):
+        if len(dateRange[2][i]) < 2:
+            dateRange[2][i] = f'0{dateRange[2][i]}'
+    dateRange[2] = f'{dateRange[2][0]}:{dateRange[2][1]}:{dateRange[2][2]}'
+    
+    if 'a' or 'A' in dateRange[3]:
+        dateRange[3] = 'AM'
+    else:
+        dateRange[3] = 'PM'    
+
+    startDate = pd.Timestamp(f"{dateRange[1]} {dateRange[2]} {dateRange[3]}")
+
+
+    for i in range(8):
+        config.dateList.append(startDate)
+        startDate = startDate + pd.DateOffset(days=1)
 
     for key, value in df.items():
         df_col_2 = value[value[2].str.contains('Colliers|Linwood', case=False) == True]
@@ -34,9 +57,7 @@ def read_excel_file():
 
     filtered_df = df.loc[df[col_index].str.contains('open by|close by', case=False) == True]
     filtered_df = filtered_df.dropna(axis=1)
-
-    print("Security Report opened")
-
+    config.securityDF= filtered_df
 
     # # String manipulation
     # totals_user_id, totals_room_num = loop_dp(filtered_df)
