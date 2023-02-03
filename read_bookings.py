@@ -4,7 +4,7 @@ from get_file import get_file_name
 import config
 
 
-def read_bookings_file(dateList):
+def read_bookings_file():
     """Opens Excel file and extracts contents into dataframe,
     returns two csv files with the totals for users and for rooms"""
 
@@ -22,7 +22,7 @@ def read_bookings_file(dateList):
 
     columnsToUse = ['ID', 'Activity', 'Location', 'Start', 'End', 'Actual Time', 'Chargeable Start', 'Chargeable End']
 
-    for i in range(len(dateList)):
-        config.bookingsDF = pd.concat([config.bookingsDF, df.loc[df['Start'].str.contains(str(dateList[i].date()), case=False) == True]])
+    for i in range(len(config.dateList)):
+        config.bookingsDF = pd.concat([config.bookingsDF, df.loc[df['Start'].str.contains(str(config.dateList[i].date()), case=False) == True]])
 
-    print(config.bookingsDF[columnsToUse])
+    #print(config.bookingsDF[columnsToUse])
