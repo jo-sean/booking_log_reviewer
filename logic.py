@@ -15,68 +15,16 @@ cal = NewZealand()
 
 
 def CalculateBillableTime():
-    config.securityDF["BookingsStartTimes"] = ""
-    config.securityDF["BookingsEndTimes"] = ""
-
     config.securityDF[1] = config.securityDF[1].apply(stringToTimestamp)
+
+    # If entry is open -> list of booking start time differences
+
+    getTimeDeltaList()
 
     print(config.securityDF)
 
+    # If entry is close -> list of booking end time differences
 
-
-
-    ###################################################################################
-    #
-    # timeRange = [startTime, finishTime]
-    # nonWorkingDay = False
-    # 
-    # CheckAllTimes()
-    # CalculateBillableHours()
-    # 
-    #
-    # CheckAllTimes()
-    #   For each entry in code9DF find most likely booking
-    #   List of time difference between code9 open and booking start
-    #   List of time difference between code9 close and booking end
-    #   Loop time differences and assign the least time difference as the actual time
-    #   If actual time unassigned; assign booking time as actual time
-    #
-    #
-    # CalculateBillableHours()
-    #   Check if public holiday
-    #   If date exists in list
-    #       nonWorkingDay = True
-    #   Check if weekend
-    #   If weekday > 4
-    #       nonWorkingDay = True
-    #
-    #   For each entry calculate if start time is >15mins earlier than booking
-    #   If it is assign actual time as billable
-    #   Else assign booking time as billable
-    #   For each entry calculate if finish time is >15 later than booking
-    #   If it is assign actual time as billable
-    #   Else assign booking time as billable
-    #
-    # BILLABLE TIME LOGIC
-    #
-    # Time difference billable start time and billable finish time
-    #
-    ###################################################################################
-
-def FindActualTime(event):
-    ###################################################################################
-    #
-    # for each day
-    #   for each open/close
-    #      calculate time difference between open/close time and start/end times
-    #      assign as actual start/end time for the booking with the lowest difference
-    #   if actual start/end and booking start/end > 15mins 
-    #      billable start/end = actual start/end
-    #   else
-    #      billable start/end = booking start/end
-    ###################################################################################
-    eventStartTime = dt.strptime(event.startTime)
-    eventEndTime = dt.strptime(event.endTime)
 
 def CheckPublicHoliday(dateToCheck):
     nz_holidays = cal.holidays(dateToCheck.year)
@@ -106,4 +54,20 @@ def stringToTimestamp(string):
         dateRange[3] = 'PM' 
 
     return pd.Timestamp(pd.to_datetime(f'{dateRange[0]} {dateRange[2]} {dateRange[3]}').strftime('%d-%m-%Y %H:%M:%S'))
+
+def getTimeDeltaList():
+    timeDeltaList = []
     
+    for index, row in config.securityDF.iterrows():
+        if 'open by' in row[5].lower():
+            timeDeltaList.append('open')
+        elif 'close by' in row[5].lower():
+            timeDeltaList.append('close')
+
+    config.securityDF[5] = timeDeltaList    
+
+    # For each code9 entry filter booking times for that room
+
+    # Save index for the booking and time diff for each booking
+    # Take the lowest time difference and corresponding index
+    # Get the time from the booking index

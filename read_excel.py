@@ -10,6 +10,9 @@ def read_excel_file():
     # Column index for the room opening/closing data
     col_index = 5
 
+    # Rooms to check bookings
+    rooms_for_bookings = ['1', '2', '5', '6', '7', '10', '10a']
+
     # Retrieves name of file being read to be used in the exports
 
     file_name = get_file_name()
@@ -49,7 +52,8 @@ def read_excel_file():
 
     for key, value in df.items():
         df_col_2 = value[value[2].str.contains('Colliers|Linwood', case=False) == True]
-        df_col_2 = df_col_2[2].str.split(' - ').str[-1]
+        df_col_2 = df_col_2[2].str.split(' - ').str[-1].str.lower()
+        df_col_2 = df_col_2.str.replace("room ", "")
         value['Room'] = df_col_2.to_string(buf=None,index=False)
     
     # Concatenate dataframes in dictionary into a single dataframe
@@ -57,6 +61,7 @@ def read_excel_file():
 
     filtered_df = df.loc[df[col_index].str.contains('open by|close by', case=False) == True]
     filtered_df = filtered_df.dropna(axis=1)
+    filtered_df = filtered_df[filtered_df['Room'].isin(rooms_for_bookings)]
     config.securityDF= filtered_df
 
     # # String manipulation

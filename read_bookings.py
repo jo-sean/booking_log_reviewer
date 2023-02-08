@@ -24,5 +24,3 @@ def read_bookings_file():
 
     for i in range(len(config.dateList)):
         config.bookingsDF = pd.concat([config.bookingsDF, df.loc[df['Start'].str.contains(str(config.dateList[i].date()), case=False) == True]])
-
-    #print(config.bookingsDF[columnsToUse])
