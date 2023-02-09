@@ -5,7 +5,7 @@ from workalendar.core import SAT, SUN
 import config
 import pandas as pd
 
-timezone = ZoneInfo('Pacific/Auckland')
+timezone = ZoneInfo(config.timezone)
 FRIDAY = 4
 
 dayStart = dt.time(8,30,0, tzinfo=timezone)
@@ -19,9 +19,7 @@ def CalculateBillableTime():
 
     # If entry is open -> list of booking start time differences
 
-    getTimeDeltaList()
-
-    print(config.securityDF)
+    getAllTimeDiffList()
 
     # If entry is close -> list of booking end time differences
 
@@ -53,21 +51,38 @@ def stringToTimestamp(string):
     else:
         dateRange[3] = 'PM' 
 
-    return pd.Timestamp(pd.to_datetime(f'{dateRange[0]} {dateRange[2]} {dateRange[3]}').strftime('%d-%m-%Y %H:%M:%S'))
+    return pd.to_datetime(f'{dateRange[0]} {dateRange[2]} {dateRange[3]}', format='%d-%m-%Y %I:%M:%S %p')
 
-def getTimeDeltaList():
-    timeDeltaList = []
+def getAllTimeDiffList():
+    timeDiffList = []
     
     for index, row in config.securityDF.iterrows():
-        if 'open by' in row[5].lower():
-            timeDeltaList.append('open')
-        elif 'close by' in row[5].lower():
-            timeDeltaList.append('close')
+        if 'open by' in row[5].lower():          
+            timeDiffList.append(getTimeDiffs(row['Room'], row[1], 'Start'))
+        elif 'close by' in row[5].lower():         
+            timeDiffList.append(getTimeDiffs(row['Room'], row[1], 'End'))
 
-    config.securityDF[5] = timeDeltaList    
+    config.securityDF['BookingTimes'] = timeDiffList
+
+    pd.set_option('display.max_colwidth', None)
+
+    for index, row in config.securityDF.iterrows():
+        print(row[[1, 'BookingTimes']])
 
     # For each code9 entry filter booking times for that room
 
     # Save index for the booking and time diff for each booking
     # Take the lowest time difference and corresponding index
     # Get the time from the booking index
+
+def getTimeDiffs(room, entryDate, columnName):
+    entryTime = entryDate
+    entryDate = pd.to_datetime(entryDate.date())
+    filteredDf = config.bookingsDF.loc[(config.bookingsDF[columnName] > entryDate) & (config.bookingsDF[columnName] <= (entryDate + pd.Timedelta(days=1)))]
+
+    filteredDf['TimeDiff'] = (filteredDf[columnName] - entryTime).dt.total_seconds() / 60
+    
+    #print(f"{entryDate}")
+    #print(filteredDf[[columnName, 'Location']])
+
+    return filteredDf['TimeDiff']

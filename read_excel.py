@@ -45,11 +45,10 @@ def read_excel_file():
 
     startDate = pd.Timestamp(f"{dateRange[1]} {dateRange[2]} {dateRange[3]}")
 
-
     for i in range(8):
         config.dateList.append(startDate)
         startDate = startDate + pd.DateOffset(days=1)
-
+        
     for key, value in df.items():
         df_col_2 = value[value[2].str.contains('Colliers|Linwood', case=False) == True]
         df_col_2 = df_col_2[2].str.split(' - ').str[-1].str.lower()
