@@ -62,12 +62,19 @@ def getAllTimeDiffList():
         elif 'close by' in row[5].lower():         
             timeDiffList.append(getTimeDiffs(row['Room'], row[1], 'End'))
 
-    config.securityDF['BookingTimes'] = timeDiffList
+    config.securityDF['BookingIndex'] = timeDiffList
 
     pd.set_option('display.max_colwidth', None)
 
     for index, row in config.securityDF.iterrows():
-        print(row[[1, 'BookingTimes']])
+        print(f"{row[1]}        {row['Room']}       {row['BookingIndex']}")
+        if len(row['BookingIndex']) > 0:
+            if 'open by' in row[5].lower():          
+                print(f"Booking start = {config.bookingsDF['Start'].loc[[row['BookingIndex']][0]].to_string(index=False)}")
+            elif 'close by' in row[5].lower():         
+                print(f"Booking end = {config.bookingsDF['End'].loc[[row['BookingIndex']][0]].to_string(index=False)}")
+        print("---------------------------------------------------------------------------------------------------------------------------------")
+
 
     # For each code9 entry filter booking times for that room
 
@@ -78,11 +85,13 @@ def getAllTimeDiffList():
 def getTimeDiffs(room, entryDate, columnName):
     entryTime = entryDate
     entryDate = pd.to_datetime(entryDate.date())
-    filteredDf = config.bookingsDF.loc[(config.bookingsDF[columnName] > entryDate) & (config.bookingsDF[columnName] <= (entryDate + pd.Timedelta(days=1)))]
 
-    filteredDf['TimeDiff'] = (filteredDf[columnName] - entryTime).dt.total_seconds() / 60
-    
-    #print(f"{entryDate}")
-    #print(filteredDf[[columnName, 'Location']])
+    filteredDf = config.bookingsDF.copy()
 
-    return filteredDf['TimeDiff']
+    mask = (filteredDf[columnName] > entryDate) & (filteredDf[columnName] <= (entryDate + pd.Timedelta(days=1))) & (filteredDf['Location'] == room)
+
+    filteredDf.loc[mask, 'TimeDiff'] = (filteredDf[columnName] - entryTime).dt.total_seconds() / 60
+
+    filteredDf = filteredDf.dropna()
+
+    return filteredDf.loc[(filteredDf['TimeDiff']) == min(filteredDf['TimeDiff'], key=abs, default=0)].index.values
