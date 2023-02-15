@@ -8,8 +8,8 @@ import pandas as pd
 timezone = ZoneInfo(config.timezone)
 FRIDAY = 4
 
-dayStart = dt.time(8,30,0, tzinfo=timezone)
-dayEnd = dt.time(16,0,0, tzinfo=timezone)
+dayStart = dt.time(8,0,0)
+dayEnd = dt.time(16,30,0)
 
 cal = NewZealand()
 
@@ -30,6 +30,15 @@ def CheckPublicHoliday(dateToCheck):
         if dateToCheck in holiday:
             return True
     return False
+
+def CheckWorkingDay(dateToCheck):
+    if dateToCheck.weekday() in {SAT, SUN}:
+        return False
+
+    if CheckPublicHoliday(dateToCheck):
+        return False
+
+    return True
 
 def stringToTimestamp(string):
     dateRange = string.split(' ')        
@@ -63,24 +72,29 @@ def getAllTimeDiffList():
             timeDiffList.append(getTimeDiffs(row['Room'], row[1], 'End'))
 
     config.securityDF['BookingIndex'] = timeDiffList
-
-    pd.set_option('display.max_colwidth', None)
+    config.bookingsDF['ActualTimes'] = pd.Series()
 
     for index, row in config.securityDF.iterrows():
         print(f"{row[1]}        {row['Room']}       {row['BookingIndex']}")
         if len(row['BookingIndex']) > 0:
-            if 'open by' in row[5].lower():          
-                print(f"Booking start = {config.bookingsDF['Start'].loc[[row['BookingIndex']][0]].to_string(index=False)}")
-            elif 'close by' in row[5].lower():         
-                print(f"Booking end = {config.bookingsDF['End'].loc[[row['BookingIndex']][0]].to_string(index=False)}")
-        print("---------------------------------------------------------------------------------------------------------------------------------")
+            if 'open by' in row[5].lower():
+                bookingTime = config.bookingsDF['Start'].loc[[row['BookingIndex']][0]].to_string(index=False)
+                print(f"Booking start: {bookingTime}")
+                print(config.bookingsDF.loc[[row['BookingIndex']][0]].index.values[0])
+                print(row['BookingIndex'][0])
+                isWorkingHours = validateTimes(row[1])                
+                #setActualTime(row['BookingIndex'][0], row[1], bookingTime, isWorkingHours)
+            elif 'close by' in row[5].lower():
+                if '65522' in row[5]:
+                    print("late to close")
+                print(f"Booking end: {config.bookingsDF['End'].loc[[row['BookingIndex']][0]].to_string(index=False)}")
+                isWorkingHours = validateTimes(row[1])
+        print(isWorkingHours)
+        print("-------------------------------------------------------")
 
-
-    # For each code9 entry filter booking times for that room
-
-    # Save index for the booking and time diff for each booking
-    # Take the lowest time difference and corresponding index
-    # Get the time from the booking index
+    print(config.bookingsDF['ActualTimes'].loc[[1352]])
+    config.bookingsDF.loc[1352, 'ActualTimes'] = "test"
+    print(config.bookingsDF['ActualTimes'].loc[[1352]])
 
 def getTimeDiffs(room, entryDate, columnName):
     entryTime = entryDate
@@ -88,10 +102,32 @@ def getTimeDiffs(room, entryDate, columnName):
 
     filteredDf = config.bookingsDF.copy()
 
-    mask = (filteredDf[columnName] > entryDate) & (filteredDf[columnName] <= (entryDate + pd.Timedelta(days=1))) & (filteredDf['Location'] == room)
+    mask = ((filteredDf[columnName] > entryDate) & 
+            (filteredDf[columnName] <= (entryDate + pd.Timedelta(days=1))) & 
+            (filteredDf['Location'] == room))
 
     filteredDf.loc[mask, 'TimeDiff'] = (filteredDf[columnName] - entryTime).dt.total_seconds() / 60
 
     filteredDf = filteredDf.dropna()
 
     return filteredDf.loc[(filteredDf['TimeDiff']) == min(filteredDf['TimeDiff'], key=abs, default=0)].index.values
+
+def validateTimes(entryDate):
+    dayStartDateTime = pd.to_datetime(pd.Timestamp.combine(date=entryDate, time=dayStart))
+    dayEndDateTime = pd.to_datetime(pd.Timestamp.combine(date=entryDate, time=dayEnd))
+
+    if CheckWorkingDay(entryDate.date()):
+        if (entryDate >= dayStartDateTime) & (entryDate <= dayEndDateTime):
+            return True
+        else:
+            return False
+    else:
+        return False
+
+def setActualTime(index, setTime, bookingTime, isWorkingHours):
+    if not isWorkingHours:
+        config.bookingsDF['ActualTimes'].loc[[index]] = setTime
+    else:
+        config.bookingsDF['ActualTimes'].loc[[index]] = bookingTime
+
+    print(f"Actual Time: {config.bookingsDF['ActualTimes'].iloc[[index]]}")
