@@ -61,6 +61,7 @@ def read_excel_file():
     filtered_df = df.loc[df[col_index].str.contains('open by|close by', case=False) == True]
     filtered_df = filtered_df.dropna(axis=1)
     filtered_df = filtered_df[filtered_df['Room'].isin(rooms_for_bookings)]
+    filtered_df = filtered_df[filtered_df[col_index].str.contains("65522")==False]
     config.securityDF= filtered_df
 
     # # String manipulation

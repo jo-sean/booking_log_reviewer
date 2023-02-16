@@ -4,6 +4,7 @@ from workalendar.oceania import NewZealand
 from workalendar.core import SAT, SUN
 import config
 import pandas as pd
+from pathlib import Path  
 
 timezone = ZoneInfo(config.timezone)
 FRIDAY = 4
@@ -16,12 +17,7 @@ cal = NewZealand()
 
 def CalculateBillableTime():
     config.securityDF[1] = config.securityDF[1].apply(stringToTimestamp)
-
-    # If entry is open -> list of booking start time differences
-
     getAllTimeDiffList()
-
-    # If entry is close -> list of booking end time differences
 
 
 def CheckPublicHoliday(dateToCheck):
@@ -72,29 +68,32 @@ def getAllTimeDiffList():
             timeDiffList.append(getTimeDiffs(row['Room'], row[1], 'End'))
 
     config.securityDF['BookingIndex'] = timeDiffList
-    config.bookingsDF['ActualTimes'] = pd.Series()
+    config.bookingsDF['ChargeableStart'] = pd.Series(dtype='float64')
+    config.bookingsDF['ChargeableEnd'] = pd.Series(dtype='float64')
 
     for index, row in config.securityDF.iterrows():
-        print(f"{row[1]}        {row['Room']}       {row['BookingIndex']}")
         if len(row['BookingIndex']) > 0:
             if 'open by' in row[5].lower():
-                bookingTime = config.bookingsDF['Start'].loc[[row['BookingIndex']][0]].to_string(index=False)
-                print(f"Booking start: {bookingTime}")
-                print(config.bookingsDF.loc[[row['BookingIndex']][0]].index.values[0])
-                print(row['BookingIndex'][0])
-                isWorkingHours = validateTimes(row[1])                
-                #setActualTime(row['BookingIndex'][0], row[1], bookingTime, isWorkingHours)
+                bookingTime = pd.to_datetime(config.bookingsDF['Start'].loc[[row['BookingIndex']][0]].to_string(index=False))
+                isWorkingHours = validateTimes(bookingTime)                
+                setChargeableStartTime(row['BookingIndex'][0], row[1], bookingTime, isWorkingHours)
             elif 'close by' in row[5].lower():
-                if '65522' in row[5]:
-                    print("late to close")
-                print(f"Booking end: {config.bookingsDF['End'].loc[[row['BookingIndex']][0]].to_string(index=False)}")
-                isWorkingHours = validateTimes(row[1])
-        print(isWorkingHours)
+                bookingTime = pd.to_datetime(config.bookingsDF['End'].loc[[row['BookingIndex']][0]].to_string(index=False))
+                isWorkingHours = validateTimes(bookingTime)
+                setChargeableEndTime(row['BookingIndex'][0], row[1], bookingTime, isWorkingHours)
+
+    fillNaN()
+
+    for index, row in config.bookingsDF.iterrows():
+        print(f"{index} {row['Activity']}   {row['Location']}")
+        print(f"{row['Start']}    {row['ChargeableStart']}")
+        print(f"{row['End']}    {row['ChargeableEnd']}")
         print("-------------------------------------------------------")
 
-    print(config.bookingsDF['ActualTimes'].loc[[1352]])
-    config.bookingsDF.loc[1352, 'ActualTimes'] = "test"
-    print(config.bookingsDF['ActualTimes'].loc[[1352]])
+    filepath = Path('out.csv')  
+
+    filepath.parent.mkdir(parents=True, exist_ok=True) 
+    config.bookingsDF[['Activity', 'Location', 'Start', 'End', 'ChargeableStart', 'ChargeableEnd']].to_csv(filepath)
 
 def getTimeDiffs(room, entryDate, columnName):
     entryTime = entryDate
@@ -124,10 +123,28 @@ def validateTimes(entryDate):
     else:
         return False
 
-def setActualTime(index, setTime, bookingTime, isWorkingHours):
+def setChargeableStartTime(index, setTime, bookingTime, isWorkingHours):
+    timeToSet = bookingTime
     if not isWorkingHours:
-        config.bookingsDF['ActualTimes'].loc[[index]] = setTime
-    else:
-        config.bookingsDF['ActualTimes'].loc[[index]] = bookingTime
+        if setTime < bookingTime:
+            timeToSet = setTime
+        
 
-    print(f"Actual Time: {config.bookingsDF['ActualTimes'].iloc[[index]]}")
+    config.bookingsDF.loc[index, 'ChargeableStart'] = timeToSet
+
+def setChargeableEndTime(index, setTime, bookingTime, isWorkingHours):
+    # If no actual time exists the assign booking time if within working hours
+    # Otherwise assign security time
+    timeToSet = config.bookingsDF.loc[index, 'ChargeableEnd']
+    if pd.isna(config.bookingsDF.loc[index, 'ChargeableEnd']):
+        if not isWorkingHours:
+            if setTime > bookingTime:
+                timeToSet = setTime
+        else:
+            timeToSet = bookingTime
+
+    config.bookingsDF.loc[index, 'ChargeableEnd'] = timeToSet
+
+def fillNaN():
+    config.bookingsDF['ChargeableStart'].fillna(config.bookingsDF['Start'], inplace=True)
+    config.bookingsDF['ChargeableEnd'].fillna(config.bookingsDF['End'], inplace=True)
