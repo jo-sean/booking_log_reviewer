@@ -5,13 +5,14 @@
 import config
 from read_excel import read_excel_file
 from read_bookings import read_bookings_file
-from logic import CalculateBillableTime
+from logic import CalculateChargeableTime, outputBookingDF
 
 
 def main():
     read_excel_file()
     read_bookings_file()
-    CalculateBillableTime()
+    CalculateChargeableTime()
+    outputBookingDF()
 
 if __name__ == "__main__":
     main()
