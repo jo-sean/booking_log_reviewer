@@ -190,4 +190,4 @@ def outputBookingDF():
     config.bookingsDF.set_index(config.bookingsDF.index.values + 2, inplace=True)
 
     filepath.parent.mkdir(parents=True, exist_ok=True) 
-    config.bookingsDF[['Activity', 'Location', 'Start', 'End', 'ActualTimes', 'ActualStart','ActualEnd', 'ChargeableStart', 'ChargeableEnd']].to_csv(filepath)
+    config.bookingsDF[['Activity', 'Location', 'Start', 'End', 'ActualTimes', 'ChargeableStart', 'ChargeableEnd']].to_csv(filepath)
