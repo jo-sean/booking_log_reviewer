@@ -15,6 +15,8 @@ dayEnd = dt.time(16,30,0)
 
 cal = NewZealand()
 
+gracePeriod = 15
+
 # Calculate the time that can be charged
 def CalculateChargeableTime():
     config.securityDF[1] = config.securityDF[1].apply(stringToTimestamp)
@@ -81,6 +83,8 @@ def prepareBookingDF(timeDiffList):
     config.bookingsDF['ActualTimes'] = pd.Series(dtype='float64')
     config.bookingsDF['ActualStart'] = pd.Series(dtype='float64')
     config.bookingsDF['ActualEnd'] = pd.Series(dtype='float64')
+    config.bookingsDF['testStart'] = pd.Series(dtype='float64')
+    config.bookingsDF['testEnd'] = pd.Series(dtype='float64')
     config.bookingsDF['ChargeableStart'] = pd.Series(dtype='float64')
     config.bookingsDF['ChargeableEnd'] = pd.Series(dtype='float64')
 
@@ -90,26 +94,57 @@ def parseSecDF():
         if len(row['BookingIndex']) > 0:
             if 'open by' in row[5].lower():
                 bookingTime = pd.to_datetime(config.bookingsDF['Start'].loc[[row['BookingIndex']][0]].to_string(index=False))
-                isWorkingHours = validateTimes(bookingTime)                
+                isWorkingHours = validateTimes(bookingTime)
+                config.bookingsDF.loc[row['BookingIndex'][0], 'testStart'] = pd.to_datetime(row[1])               
                 setActualStartTime(row['BookingIndex'][0], row[1], bookingTime, isWorkingHours)
             elif 'close by' in row[5].lower():
                 bookingTime = pd.to_datetime(config.bookingsDF['End'].loc[[row['BookingIndex']][0]].to_string(index=False))
                 isWorkingHours = validateTimes(bookingTime)
+                config.bookingsDF.loc[row['BookingIndex'][0], 'testEnd'] = pd.to_datetime(row[1])
                 setActualEndTime(row['BookingIndex'][0], row[1], bookingTime, isWorkingHours)
 
 # If outside working hours sets the ActualStart time to be either the time from the 
 # security report or the booking time. 
 # If time is less than 15 minutes over uses booking time
 def setActualStartTime(index, setTime, bookingTime, isWorkingHours):
-    timeToSet = bookingTime
+    timeToSet = config.bookingsDF.loc[index, 'ChargeableStart']
+    existingTime = config.bookingsDF.loc[index, 'testStart']
+    print(index + 2, config.bookingsDF.loc[index, 'Activity'], existingTime)
     
-    if not isWorkingHours:
-        if setTime < bookingTime:
-            timeDiff = pd.Timedelta(bookingTime - setTime).seconds / 60
-            if timeDiff > 15:
-                timeToSet = setTime
-            else:
-                timeToSet = bookingTime                 
+    if pd.isna(timeToSet):
+        if not isWorkingHours:
+            if setTime < bookingTime:
+                timeDiff = pd.Timedelta(bookingTime - setTime).seconds / 60
+                if timeDiff > gracePeriod:
+                    setTime = setTime + pd.Timedelta(minutes=gracePeriod)
+                    timeToSet = setTime
+                else:
+                    timeToSet = bookingTime
+    
+    else:
+        newTimeDiff = pd.Timedelta(bookingTime - setTime)
+        existingTimeDiff = pd.Timedelta(bookingTime -existingTime)
+        
+        if newTimeDiff < existingTimeDiff:
+            if not isWorkingHours:
+                if setTime < bookingTime:
+                    timeDiff = pd.Timedelta(bookingTime - setTime).seconds / 60
+                    if timeDiff > gracePeriod:
+                        setTime = setTime + pd.Timedelta(minutes=gracePeriod)
+                        timeToSet = setTime
+                    else:
+                        timeToSet = bookingTime
+        else:
+            if not isWorkingHours:
+                if setTime < bookingTime:
+                    timeDiff = pd.Timedelta(bookingTime - existingTime).seconds / 60
+                    if timeDiff > gracePeriod:
+                        setTime = setTime + pd.Timedelta(minutes=gracePeriod)
+                        timeToSet = existingTime
+                    else:
+                        timeToSet = bookingTime
+
+
 
     config.bookingsDF.loc[index, 'ActualStart'] = timeToSet
 
@@ -117,12 +152,13 @@ def setActualStartTime(index, setTime, bookingTime, isWorkingHours):
 # security report or the booking time.
 # If time is less than 15 minutes over uses booking time
 def setActualEndTime(index, setTime, bookingTime, isWorkingHours):
-    timeToSet = config.bookingsDF.loc[index, 'ActualEnd']
+    timeToSet = config.bookingsDF.loc[index, 'ChargeableEnd']
     if pd.isna(timeToSet):
         if not isWorkingHours:
             if setTime > bookingTime:
                 timeDiff = pd.Timedelta(setTime - bookingTime).seconds / 60
-                if timeDiff > 15:
+                if timeDiff > gracePeriod:
+                    setTime = setTime - pd.Timedelta(minutes=gracePeriod)
                     timeToSet = setTime
                 else:
                     timeToSet = bookingTime 
@@ -174,7 +210,22 @@ def fillNaN():
 
 # Add column with ActualStart/ActualEnd in more a readable HH:MM format
 def fillActualTimes():
-    config.bookingsDF['ActualTimes'] = config.bookingsDF['ActualStart'].dt.strftime('%H:%M').str.cat(config.bookingsDF['ActualEnd'].dt.strftime('%H:%M').values, sep=' - ')
+    for index, row in config.bookingsDF.iterrows():
+        actualTimesList = [" ", " "]
+        
+        if pd.isna(row['testStart']):
+            actualTimesList[0] = " "
+
+        else:
+            if not validateTimes(row['testStart']):
+                actualTimesList[0] = row['testStart'].strftime('%H:%M')
+        
+        if pd.isna(row['testEnd']):
+            actualTimesList[1] = " "
+        else:
+            if not validateTimes(row['testEnd']):
+                actualTimesList[1] = row['testEnd'].strftime('%H:%M')
+        config.bookingsDF.loc[index, 'ActualTimes'] = (f"{actualTimesList[0]}-{actualTimesList[1]}")
 
 # Populate ChargeableStart/ChargeableEnd with HH:MM times
 def fillChargeableTimes():
@@ -185,9 +236,9 @@ def fillChargeableTimes():
 def outputBookingDF():
     os.makedirs('Output_Files', exist_ok=True)
     filename = (f"{config.dateList[0].date()}_to_{config.dateList[-1].date()}")
-    filepath = Path(f'Output Files/bookings_{filename}.csv') 
+    filepath = Path(f'Output_Files/bookings_{filename}.csv') 
 
     config.bookingsDF.set_index(config.bookingsDF.index.values + 2, inplace=True)
 
     filepath.parent.mkdir(parents=True, exist_ok=True) 
-    config.bookingsDF[['Activity', 'Location', 'Start', 'End', 'ActualTimes', 'ChargeableStart', 'ChargeableEnd']].to_csv(filepath)
+    config.bookingsDF[['Activity', 'Location', 'Start', 'End', 'ActualTimes', 'ChargeableStart', 'ChargeableEnd', 'testStart', 'testEnd']].to_csv(filepath)
