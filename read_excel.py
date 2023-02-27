@@ -43,7 +43,9 @@ def read_excel_file():
     else:
         dateRange[3] = 'PM'    
 
-    startDate = pd.Timestamp(f"{dateRange[1]} {dateRange[2]} {dateRange[3]}")
+    startDate = pd.Timestamp(f"{dateRange[1]} {dateRange[2]} {dateRange[3]}", day)
+    print(startDate)
+    print(f"{dateRange[1]}")
 
     for i in range(8):
         config.dateList.append(startDate)
@@ -55,13 +57,18 @@ def read_excel_file():
         df_col_2 = df_col_2.str.replace("room ", "")
         value['Room'] = df_col_2.to_string(buf=None,index=False)
     
+    print(config.dateList)
+
     # Concatenate dataframes in dictionary into a single dataframe
     df = pd.concat(df)
 
     filtered_df = df.loc[df[col_index].str.contains('open by|close by', case=False) == True]
     filtered_df = filtered_df.dropna(axis=1)
     filtered_df = filtered_df[filtered_df['Room'].isin(rooms_for_bookings)]
+    # Filter out late to closes
     filtered_df = filtered_df[filtered_df[col_index].str.contains("65522")==False]
+    #Filter out PCCCT
+    filtered_df = filtered_df[filtered_df[col_index].str.contains("PCCCT")==False]
     config.securityDF= filtered_df
 
     # # String manipulation

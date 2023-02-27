@@ -1,16 +1,19 @@
+import datetime as dt
 from zoneinfo import ZoneInfo
 from workalendar.oceania import NewZealand
-import datetime
+from workalendar.core import SAT, SUN
+import config
 
-ZoneInfo('Pacific/Auckland')
+timezone = ZoneInfo(config.timezone)
+FRIDAY = 4
 
-timeNow = datetime.datetime.now()
-
-print(timeNow)
+dayStart = dt.time(8,0,0)
+dayEnd = dt.time(16,30,0)
 
 cal = NewZealand()
 
 nz_holidays = cal.holidays(2023)
-
-for x in range(len(nz_holidays)):
-    print(nz_holidays[x])
+for holiday in nz_holidays:
+    datetest = dt.date(2023,1,2)
+    if datetest in holiday:
+        print(holiday)
