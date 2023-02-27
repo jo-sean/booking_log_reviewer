@@ -81,10 +81,8 @@ def getTimeDiffs(room, entryDate, columnName):
 def prepareBookingDF(timeDiffList):
     config.securityDF['BookingIndex'] = timeDiffList
     config.bookingsDF['ActualTimes'] = pd.Series(dtype='float64')
-    config.bookingsDF['ChargeableStartDateTime'] = pd.Series(dtype='float64')
-    config.bookingsDF['ChargeableEndDateTime'] = pd.Series(dtype='float64')
-    config.bookingsDF['testStart'] = pd.Series(dtype='float64')
-    config.bookingsDF['testEnd'] = pd.Series(dtype='float64')
+    config.bookingsDF['ActualStart'] = pd.Series(dtype='float64')
+    config.bookingsDF['ActualEnd'] = pd.Series(dtype='float64')
     config.bookingsDF['ChargeableStart'] = pd.Series(dtype='float64')
     config.bookingsDF['ChargeableEnd'] = pd.Series(dtype='float64')
 
@@ -93,52 +91,57 @@ def parseSecDF():
     for index, row in config.securityDF.iterrows():
         if len(row['BookingIndex']) > 0:
             if 'open by' in row[5].lower():
-                bookingTime = pd.to_datetime(config.bookingsDF['Start'].loc[[row['BookingIndex']][0]].to_string(index=False))
-                isWorkingHours = validateTimes(bookingTime)
-                config.bookingsDF.loc[row['BookingIndex'][0], 'testStart'] = pd.to_datetime(row[1])               
-                setActualStartTime(row['BookingIndex'][0], row[1], bookingTime, isWorkingHours)
+                bookingStartTime = pd.to_datetime(config.bookingsDF['Start'].loc[[row['BookingIndex']][0]].to_string(index=False))
+                bookingEndTime = pd.to_datetime(config.bookingsDF['End'].loc[[row['BookingIndex']][0]].to_string(index=False))
+                isWorkingHours = validateTimes(bookingStartTime)
+                config.bookingsDF.loc[row['BookingIndex'][0], 'ActualStart'] = pd.to_datetime(row[1])               
+                setActualStartTime(row['BookingIndex'][0], row[1], bookingStartTime, bookingEndTime, isWorkingHours)
             elif 'close by' in row[5].lower():
-                bookingTime = pd.to_datetime(config.bookingsDF['End'].loc[[row['BookingIndex']][0]].to_string(index=False))
-                isWorkingHours = validateTimes(bookingTime)
-                config.bookingsDF.loc[row['BookingIndex'][0], 'testEnd'] = pd.to_datetime(row[1])
-                setActualEndTime(row['BookingIndex'][0], row[1], bookingTime, isWorkingHours)
+                bookingStartTime = pd.to_datetime(config.bookingsDF['Start'].loc[[row['BookingIndex']][0]].to_string(index=False))
+                bookingEndTime = pd.to_datetime(config.bookingsDF['End'].loc[[row['BookingIndex']][0]].to_string(index=False))
+                isWorkingHours = validateTimes(bookingStartTime)
+                config.bookingsDF.loc[row['BookingIndex'][0], 'ActualEnd'] = pd.to_datetime(row[1])
+                setActualEndTime(row['BookingIndex'][0], row[1], bookingStartTime, bookingEndTime, isWorkingHours)
 
-# If outside working hours sets the ActualStart time to be either the time from the 
+# If outside working hours sets the ChargeableStart time to be either the time from the 
 # security report or the booking time. 
 # If time is less than 15 minutes over uses booking time
-def setActualStartTime(index, setTime, bookingTime, isWorkingHours):
-    timeToSet = None
-    if not isWorkingHours:
-        if setTime < bookingTime:
-            timeDiff = pd.Timedelta(bookingTime - setTime).seconds / 60
-            if timeDiff > gracePeriod:
-                setTime = setTime + pd.Timedelta(minutes=gracePeriod)
-                timeToSet = setTime
-            else:
-                timeToSet = bookingTime
-    else:
-        timeToSet = bookingTime
+def setActualStartTime(index, setTime, bookingStartTime, bookingEndTime, isWorkingHours):
+    timeToSet = config.bookingsDF.loc[index, 'ChargeableStart']
 
-    config.bookingsDF.loc[index, 'ChargeableStartDateTime'] = timeToSet
+    if pd.isna(timeToSet) and (setTime < bookingEndTime):
+        if not isWorkingHours:
+            if setTime < bookingStartTime:
+                timeDiff = pd.Timedelta(bookingStartTime - setTime).seconds / 60
+                if timeDiff > gracePeriod:
+                    setTime = setTime + pd.Timedelta(minutes=gracePeriod)
+                    timeToSet = setTime
+                else:
+                    timeToSet = bookingStartTime
+        else:
+            timeToSet = bookingStartTime
 
-# If outside working hours sets the ActualEnd time to be either the time from the 
+    config.bookingsDF.loc[index, 'ChargeableStart'] = timeToSet
+
+# If outside working hours sets the ChargeableEnd time to be either the time from the 
 # security report or the booking time.
 # If time is less than 15 minutes over uses booking time
-def setActualEndTime(index, setTime, bookingTime, isWorkingHours):
-    timeToSet = config.bookingsDF.loc[index, 'ChargeableEndDateTime']
-    if pd.isna(timeToSet):
+def setActualEndTime(index, setTime, bookingStartTime, bookingEndTime, isWorkingHours):
+    timeToSet = config.bookingsDF.loc[index, 'ChargeableEnd']
+
+    if (pd.isna(timeToSet)) and (setTime > bookingStartTime):
         if not isWorkingHours:
-            if setTime > bookingTime:
-                timeDiff = pd.Timedelta(setTime - bookingTime).seconds / 60
+            if setTime > bookingEndTime:
+                timeDiff = pd.Timedelta(setTime - bookingEndTime).seconds / 60
                 if timeDiff > gracePeriod:
                     setTime = setTime - pd.Timedelta(minutes=gracePeriod)
                     timeToSet = setTime
                 else:
-                    timeToSet = bookingTime 
+                    timeToSet = bookingEndTime 
         else:
-            timeToSet = bookingTime
+            timeToSet = bookingEndTime
 
-    config.bookingsDF.loc[index, 'ChargeableEndDateTime'] = timeToSet
+    config.bookingsDF.loc[index, 'ChargeableEnd'] = timeToSet
 
 # Checks if times within working hours
 def validateTimes(entryDate):
@@ -178,29 +181,32 @@ def parseBookingDF():
 
 # Fill NaN entries in actual time with the booking times
 def fillNaN():
-    config.bookingsDF['ChargeableStartDateTime'].fillna(config.bookingsDF['Start'], inplace=True)
-    config.bookingsDF['ChargeableEndDateTime'].fillna(config.bookingsDF['End'], inplace=True)
+    config.bookingsDF['ChargeableStart'].fillna(config.bookingsDF['Start'], inplace=True)
+    config.bookingsDF['ChargeableEnd'].fillna(config.bookingsDF['End'], inplace=True)
 
 # Add column with ActualStart/ActualEnd in more a readable HH:MM-HH:MM format
 def fillActualTimes():
     for index, row in config.bookingsDF.iterrows():
+        # Checks if ActualStart is before ActualEnd then sets times if it is
+        # If no ActualEnd will check if ActualStart is before booking end
+        # ActualTime is left as ... if no ActualStart/ActualEnd or the time is invalid 
         actualTimesList = ["...", "..."]
+
+        if pd.notna(row['ActualStart']):
+            if pd.notna(row['ActualEnd']):
+                if row['ActualStart'] < row['ActualEnd']:
+                    actualTimesList[0] = row['ActualStart'].strftime('%H:%M')
+            elif row['ActualStart'] < row['End']:
+                actualTimesList[0] = row['ActualStart'].strftime('%H:%M')
         
-        if pd.notna(row['testStart']):
-            if pd.notna(row['testEnd']):
-                if row['testStart'] < row['testEnd']:
-                    actualTimesList[0] = row['testStart'].strftime('%H:%M')
-            else:
-                actualTimesList[0] = row['testStart'].strftime('%H:%M')
-        
-        if pd.notna(row['testEnd']):
-            actualTimesList[1] = row['testEnd'].strftime('%H:%M')
+        if pd.notna(row['ActualEnd']):
+            actualTimesList[1] = row['ActualEnd'].strftime('%H:%M')
         config.bookingsDF.loc[index, 'ActualTimes'] = (f"{actualTimesList[0]}-{actualTimesList[1]}")
 
-# Populate ChargeableStart/ChargeableEnd with HH:MM times
+# Convert ChargeableStart/ChargeableEnd with HH:MM times
 def fillChargeableTimes():
-    config.bookingsDF['ChargeableStart'] = config.bookingsDF['ChargeableStartDateTime'].dt.strftime('%H:%M')
-    config.bookingsDF['ChargeableEnd'] = config.bookingsDF['ChargeableEndDateTime'].dt.strftime('%H:%M')
+    config.bookingsDF['ChargeableStart'] = config.bookingsDF['ChargeableStart'].dt.strftime('%H:%M')
+    config.bookingsDF['ChargeableEnd'] = config.bookingsDF['ChargeableEnd'].dt.strftime('%H:%M')
 
 # Output the necessary information in a csv file
 def outputBookingDF():
@@ -211,4 +217,4 @@ def outputBookingDF():
     config.bookingsDF.set_index(config.bookingsDF.index.values + 2, inplace=True)
 
     filepath.parent.mkdir(parents=True, exist_ok=True) 
-    config.bookingsDF[['Activity', 'Location', 'Start', 'End', 'ActualTimes', 'ChargeableStart', 'ChargeableEnd', 'testStart', 'testEnd', 'ChargeableStartDateTime', 'ChargeableEndDateTime']].to_csv(filepath)
+    config.bookingsDF[['Activity', 'Location', 'Start', 'End', 'ActualTimes', 'ChargeableStart', 'ChargeableEnd', 'ActualStart', 'ActualEnd', 'Chargeable Start', 'Chargeable End']].to_csv(filepath)
