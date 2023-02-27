@@ -73,10 +73,6 @@ def getTimeDiffs(room, entryDate, columnName):
 
     filteredDf.loc[mask, 'TimeDiff'] = (filteredDf[columnName] - entryTime).dt.total_seconds() / 60
 
-    print("-----------------------------")
-    print(entryTime)
-    print(filteredDf[['Activity', 'Location', columnName]].loc[filteredDf['Location'] == room])
-
     filteredDf = filteredDf.dropna()
 
     return filteredDf.loc[(filteredDf['TimeDiff']) == min(filteredDf['TimeDiff'], key=abs, default=0)].index.values
@@ -160,18 +156,15 @@ def validateTimes(entryDate):
 # Check if the date is a working day (mon-fir and not a public holiday)
 def CheckWorkingDay(dateToCheck):
     if dateToCheck.weekday() in {SAT, SUN}:
-        print("sat/sun")
         return False
 
     if CheckPublicHoliday(dateToCheck):
-        print("holiday check")
         return False
 
     return True
 
 # Check if the date is a public holiday
 def CheckPublicHoliday(dateToCheck):
-    print("test")
     nz_holidays = cal.holidays(dateToCheck.year)
     for holiday in nz_holidays:
         if dateToCheck in holiday:
