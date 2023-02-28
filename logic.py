@@ -190,7 +190,7 @@ def fillActualTimes():
         # Checks if ActualStart is before ActualEnd then sets times if it is
         # If no ActualEnd will check if ActualStart is before booking end
         # ActualTime is left as ... if no ActualStart/ActualEnd or the time is invalid 
-        actualTimesList = ["...", "..."]
+        actualTimesList = [None, None]
 
         if pd.notna(row['ActualStart']):
             if pd.notna(row['ActualEnd']):
@@ -201,7 +201,13 @@ def fillActualTimes():
         
         if pd.notna(row['ActualEnd']):
             actualTimesList[1] = row['ActualEnd'].strftime('%H:%M')
-        config.bookingsDF.loc[index, 'ActualTimes'] = (f"{actualTimesList[0]}-{actualTimesList[1]}")
+
+        if pd.notna(actualTimesList[0]) and pd.notna(actualTimesList[1]):
+            config.bookingsDF.loc[index, 'ActualTimes'] = (f"{actualTimesList[0]}-{actualTimesList[1]}")
+        elif pd.notna(actualTimesList[0]):
+            config.bookingsDF.loc[index, 'ActualTimes'] = (f"{actualTimesList[0]}-...")
+        elif pd.notna(actualTimesList[1]):
+            config.bookingsDF.loc[index, 'ActualTimes'] = (f"...-{actualTimesList[1]}")
 
 # Convert ChargeableStart/ChargeableEnd with HH:MM times
 def fillChargeableTimes():
@@ -217,4 +223,4 @@ def outputBookingDF():
     config.bookingsDF.set_index(config.bookingsDF.index.values + 2, inplace=True)
 
     filepath.parent.mkdir(parents=True, exist_ok=True) 
-    config.bookingsDF[['Activity', 'Location', 'Start', 'End', 'ActualTimes', 'ChargeableStart', 'ChargeableEnd', 'ActualStart', 'ActualEnd', 'Chargeable Start', 'Chargeable End']].to_csv(filepath)
+    config.bookingsDF[['Activity', 'Location', 'Start', 'End', 'ActualTimes', 'ChargeableStart', 'ChargeableEnd']].to_csv(filepath)
