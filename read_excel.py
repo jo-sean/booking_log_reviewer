@@ -127,6 +127,9 @@ def read_excel_files():
 
     filtered_df = pd.concat(df_list)
 
+    filtered_df.loc[filtered_df['Room'] == "administration", 'Room'] = "10"
+    print(filtered_df['Room'])
+
     filtered_df = filtered_df.loc[filtered_df[col_index].str.contains('open by|close by', case=False) == True]
     filtered_df = filtered_df.dropna(axis=1)
     # Keep only rooms from list in dataframe
