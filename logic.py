@@ -94,19 +94,43 @@ def parseSecDF():
                 bookingStartTime = pd.to_datetime(config.bookingsDF['Start'].loc[[row['BookingIndex']][0]].to_string(index=False))
                 bookingEndTime = pd.to_datetime(config.bookingsDF['End'].loc[[row['BookingIndex']][0]].to_string(index=False))
                 isWorkingHours = validateTimes(bookingStartTime)
-                config.bookingsDF.loc[row['BookingIndex'][0], 'ActualStart'] = pd.to_datetime(row[1])               
-                setActualStartTime(row['BookingIndex'][0], row[1], bookingStartTime, bookingEndTime, isWorkingHours)
+                config.bookingsDF.loc[row['BookingIndex'][0], 'ActualStart'] = pd.to_datetime(row[1])  
+                setActualStartTime(row['BookingIndex'][0], row[1], bookingEndTime, isWorkingHours)             
+                setChargeableStartTime(row['BookingIndex'][0], row[1], bookingStartTime, bookingEndTime, isWorkingHours)
             elif 'close by' in row[5].lower():
                 bookingStartTime = pd.to_datetime(config.bookingsDF['Start'].loc[[row['BookingIndex']][0]].to_string(index=False))
                 bookingEndTime = pd.to_datetime(config.bookingsDF['End'].loc[[row['BookingIndex']][0]].to_string(index=False))
                 isWorkingHours = validateTimes(bookingStartTime)
-                config.bookingsDF.loc[row['BookingIndex'][0], 'ActualEnd'] = pd.to_datetime(row[1])
-                setActualEndTime(row['BookingIndex'][0], row[1], bookingStartTime, bookingEndTime, isWorkingHours)
+                setActualEndTime(row['BookingIndex'][0], row[1], bookingStartTime, isWorkingHours)
+                setChargeableEndTime(row['BookingIndex'][0], row[1], bookingStartTime, bookingEndTime, isWorkingHours)
 
-# If outside working hours sets the ChargeableStart time to be either the time from the 
+# If outside working hours sets the ActualStart time to be either the time from the 
+# security report or leaves empty 
+def setActualStartTime(index, setTime, bookingEndTime, isWorkingHours):
+    timeToSet = config.bookingsDF.loc[index, 'ActualStart']
+
+    if pd.isna(timeToSet) and (setTime < bookingEndTime):
+        if not isWorkingHours:
+            timeToSet = setTime
+
+    config.bookingsDF.loc[index, 'ActualStart'] = timeToSet
+
+# If outside working hours sets the ActualEnd time to be either the time from the 
+# security report or leaves empty
+def setActualEndTime(index, setTime, bookingStartTime, isWorkingHours):
+    timeToSet = config.bookingsDF.loc[index, 'ActualEnd']
+
+    if (pd.isna(timeToSet)) and (setTime > bookingStartTime):
+        if not isWorkingHours:
+            timeToSet = setTime
+
+    config.bookingsDF.loc[index, 'ActualEnd'] = timeToSet
+
+    
+    # If outside working hours sets the ChargeableStart time to be either the time from the 
 # security report or the booking time. 
 # If time is less than 15 minutes over uses booking time
-def setActualStartTime(index, setTime, bookingStartTime, bookingEndTime, isWorkingHours):
+def setChargeableStartTime(index, setTime, bookingStartTime, bookingEndTime, isWorkingHours):
     timeToSet = config.bookingsDF.loc[index, 'ChargeableStart']
 
     if pd.isna(timeToSet) and (setTime < bookingEndTime):
@@ -126,7 +150,7 @@ def setActualStartTime(index, setTime, bookingStartTime, bookingEndTime, isWorki
 # If outside working hours sets the ChargeableEnd time to be either the time from the 
 # security report or the booking time.
 # If time is less than 15 minutes over uses booking time
-def setActualEndTime(index, setTime, bookingStartTime, bookingEndTime, isWorkingHours):
+def setChargeableEndTime(index, setTime, bookingStartTime, bookingEndTime, isWorkingHours):
     timeToSet = config.bookingsDF.loc[index, 'ChargeableEnd']
 
     if (pd.isna(timeToSet)) and (setTime > bookingStartTime):
@@ -223,4 +247,5 @@ def outputBookingDF():
     config.bookingsDF.set_index(config.bookingsDF.index.values + 2, inplace=True)
 
     filepath.parent.mkdir(parents=True, exist_ok=True) 
+    config.bookingsDF = config.bookingsDF.sort_index()
     config.bookingsDF[['Activity', 'Location', 'Start', 'End', 'ActualTimes', 'ChargeableStart', 'ChargeableEnd']].to_csv(filepath)

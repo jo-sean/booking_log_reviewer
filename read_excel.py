@@ -124,6 +124,8 @@ def read_excel_files():
 
         df = pd.concat(df)
         df_list.append(df)
+        
+    config.dateList.sort()
 
     filtered_df = pd.concat(df_list)
 
