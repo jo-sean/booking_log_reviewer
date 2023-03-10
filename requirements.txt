@@ -2,4 +2,10 @@ pandas
 numpy
 xlrd
 pywin32
+python-dateutil
+lunardate
+backports.zoneinfo;python_version<"3.9"
+tzdata;platform_system=="Windows"
 convertdate
+pyluach
+importlib-metadata;python_version < "3.8"
