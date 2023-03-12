@@ -9,3 +9,4 @@ tzdata;platform_system=="Windows"
 convertdate
 pyluach
 importlib-metadata;python_version < "3.8"
+openpyxl
