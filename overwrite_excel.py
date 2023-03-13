@@ -30,13 +30,15 @@ def overwrite_excel_file():
     chargeableStartColumn = pos_to_char(config.bookingsDF.columns.get_loc('Chargeable Start')).upper()
     chargeableEndColumn = pos_to_char(config.bookingsDF.columns.get_loc('Chargeable End')).upper()
     startRow = config.bookingsDF.index[0]
+    print(startRow)
 
     # Overwrite the cell values with the value from the dataframe
-    for i in range(startRow, len(config.bookingsDF)):
+    print(len(config.bookingsDF))
+    for i in range(startRow, (startRow + len(config.bookingsDF))):
+        print(i)
         sh.Range(f"{actualTimeColumn}{i}").Value = config.bookingsDF.loc[i]['ActualTimes']
         sh.Range(f"{chargeableStartColumn}{i}").Value = config.bookingsDF.loc[i]['ChargeableStart']
-        sh.Range(f"{chargeableEndColumn}{i}").Value = config.bookingsDF.loc[i]['ChargeableEnd']
-    
+        sh.Range(f"{chargeableEndColumn}{i}").Value = config.bookingsDF.loc[i]['ChargeableEnd']    
     wb.Save()
 
 # Convert a number to a letter
