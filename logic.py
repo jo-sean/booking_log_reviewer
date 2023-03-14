@@ -19,34 +19,10 @@ gracePeriod = 15
 
 # Calculate the time that can be charged
 def CalculateChargeableTime():
-    config.securityDF[1] = config.securityDF[1].apply(stringToTimestamp)
     timeDiffList = getAllTimeDiffList()
     prepareBookingDF(timeDiffList)
     parseSecDF()
     parseBookingDF()
-
-# Convert the security report times into a usable format
-def stringToTimestamp(string):
-    dateRange = string.split(' ')        
-
-    dateRange[0] = dateRange[0].split('/')
-    for i in range(len(dateRange[0])):
-        if len(dateRange[0][i]) < 2:
-            dateRange[0][i] = f'0{dateRange[0][i]}'
-    dateRange[0] = f'{dateRange[0][0]}-{dateRange[0][1]}-{dateRange[0][2]}'
-
-    dateRange[2] = dateRange[2].split(':')
-    for i in range(len(dateRange[2])):
-        if len(dateRange[2][i]) < 2:
-            dateRange[2][i] = f'0{dateRange[2][i]}'
-    dateRange[2] = f'{dateRange[2][0]}:{dateRange[2][1]}:{dateRange[2][2]}'
-
-    if 'a' in dateRange[3] or 'A' in dateRange[3]:
-        dateRange[3] = 'AM'
-    else:
-        dateRange[3] = 'PM' 
-
-    return pd.to_datetime(f'{dateRange[0]} {dateRange[2]} {dateRange[3]}', format='%d-%m-%Y %I:%M:%S %p')
 
 # Get a list of time differences for each booking with the time from the security report
 def getAllTimeDiffList():
@@ -241,7 +217,7 @@ def fillChargeableTimes():
 # Output the necessary information in a csv file
 def outputBookingDF():
     os.makedirs('Output_Files', exist_ok=True)
-    filename = (f"{config.dateList[0].date()}_to_{config.dateList[-1].date()}")
+    filename = (f"{config.dateList[0]}_to_{config.dateList[-1]}")
     filepath = Path(f'Output_Files/bookings_{filename}.csv') 
 
     config.bookingsDF.set_index(config.bookingsDF.index.values + 2, inplace=True)

@@ -20,10 +20,8 @@ def read_bookings_file():
     # Retrieves only the file name from the path
     file_name = os.path.splitext(os.path.basename(file_name))[0]
 
-    columnsToUse = ['ID', 'Activity', 'Location', 'Start', 'End', 'Actual Time', 'Chargeable Start', 'Chargeable End']
-
     for i in range(len(config.dateList)):
-        config.bookingsDF = pd.concat([config.bookingsDF, df.loc[df['Start'].str.contains(str(config.dateList[i].date()), case=False) == True]])
+        config.bookingsDF = pd.concat([config.bookingsDF, df.loc[df['Start'].str.contains(str(config.dateList[i]), case=False) == True]])
 
     config.bookingsDF['Location'] = config.bookingsDF['Location'].str.lower()
     config.bookingsDF['Start'] = pd.to_datetime(config.bookingsDF['Start'])
