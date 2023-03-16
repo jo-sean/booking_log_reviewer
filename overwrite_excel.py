@@ -3,6 +3,7 @@ import os
 import config
 import datetime
 import shutil
+import pandas as pd
 
 def overwrite_excel_file():
     # Fill NaN with white space otherwise displays in excel as 65535
@@ -32,10 +33,10 @@ def overwrite_excel_file():
     startRow = config.bookingsDF.index[0]
 
     # Overwrite the cell values with the value from the dataframe
-    for i in range(startRow, (startRow + len(config.bookingsDF))):
-        sh.Range(f"{actualTimeColumn}{i}").Value = config.bookingsDF.loc[i]['ActualTimes']
-        sh.Range(f"{chargeableStartColumn}{i}").Value = config.bookingsDF.loc[i]['ChargeableStart']
-        sh.Range(f"{chargeableEndColumn}{i}").Value = config.bookingsDF.loc[i]['ChargeableEnd']    
+    for index, row in config.bookingsDF.iterrows():
+        sh.Range(f"{actualTimeColumn}{index}").Value = row['ActualTimes']
+        sh.Range(f"{chargeableStartColumn}{index}").Value = row['ChargeableStart']
+        sh.Range(f"{chargeableEndColumn}{index}").Value = row['ChargeableEnd']   
     wb.Save()
 
 # Convert a number to a letter

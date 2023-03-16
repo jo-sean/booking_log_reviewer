@@ -83,17 +83,18 @@ def read_excel_files():
 
     filtered_df = filtered_df.loc[filtered_df[col_index].str.contains('open by|close by', case=False) == True]
     filtered_df = filtered_df.dropna(axis=1)
+
+    filtered_df[1] = filtered_df[1].apply(stringToTimestamp)
+
+    config.dateList = filtered_df[1].map(pd.Timestamp.date).unique()
+    config.dateList.sort()
+
     # Keep only rooms from list in dataframe
     filtered_df = filtered_df[filtered_df['Room'].isin(rooms_for_bookings)]
     # Remove late to close from dataframe
     filtered_df = filtered_df[filtered_df[col_index].str.contains("65522")==False]
     # Remove PCCCT from dataframe
     filtered_df = filtered_df[filtered_df[col_index].str.contains("PCCCT")==False]
-
-    filtered_df[1] = filtered_df[1].apply(stringToTimestamp)
-
-    config.dateList = filtered_df[1].map(pd.Timestamp.date).unique()
-    config.dateList.sort()
 
     config.securityDF= filtered_df
 

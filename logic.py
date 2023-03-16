@@ -103,7 +103,7 @@ def setActualEndTime(index, setTime, bookingStartTime, isWorkingHours):
     config.bookingsDF.loc[index, 'ActualEnd'] = timeToSet
 
     
-    # If outside working hours sets the ChargeableStart time to be either the time from the 
+# If outside working hours sets the ChargeableStart time to be either the time from the 
 # security report or the booking time. 
 # If time is less than 15 minutes over uses booking time
 def setChargeableStartTime(index, setTime, bookingStartTime, bookingEndTime, isWorkingHours):
@@ -120,6 +120,15 @@ def setChargeableStartTime(index, setTime, bookingStartTime, bookingEndTime, isW
                     timeToSet = bookingStartTime
         else:
             timeToSet = bookingStartTime
+    elif setTime < bookingEndTime:
+        if setTime < bookingStartTime:
+                timeDiff = pd.Timedelta(bookingStartTime - setTime).seconds / 60
+                if timeDiff > gracePeriod:
+                    setTime = setTime + pd.Timedelta(minutes=gracePeriod)
+                    if pd.Timedelta(bookingStartTime - setTime) < pd.Timedelta(bookingStartTime - timeToSet):
+                        timeToSet = setTime
+                else:
+                    timeToSet = bookingStartTime
 
     config.bookingsDF.loc[index, 'ChargeableStart'] = timeToSet
 
@@ -129,7 +138,7 @@ def setChargeableStartTime(index, setTime, bookingStartTime, bookingEndTime, isW
 def setChargeableEndTime(index, setTime, bookingStartTime, bookingEndTime, isWorkingHours):
     timeToSet = config.bookingsDF.loc[index, 'ChargeableEnd']
 
-    if (pd.isna(timeToSet)) and (setTime > bookingStartTime):
+    if pd.isna(timeToSet) and (setTime > bookingStartTime):
         if not isWorkingHours:
             if setTime > bookingEndTime:
                 timeDiff = pd.Timedelta(setTime - bookingEndTime).seconds / 60
@@ -140,6 +149,15 @@ def setChargeableEndTime(index, setTime, bookingStartTime, bookingEndTime, isWor
                     timeToSet = bookingEndTime 
         else:
             timeToSet = bookingEndTime
+    elif setTime > bookingStartTime:
+        if setTime < bookingEndTime:
+                timeDiff = pd.Timedelta(setTime - bookingEndTime).seconds / 60
+                if timeDiff > gracePeriod:
+                    setTime = setTime + pd.Timedelta(minutes=gracePeriod)
+                    if pd.Timedelta(bookingEndTime - setTime) < pd.Timedelta(bookingEndTime - timeToSet):
+                        timeToSet = setTime
+                else:
+                    timeToSet = bookingEndTime
 
     config.bookingsDF.loc[index, 'ChargeableEnd'] = timeToSet
 
