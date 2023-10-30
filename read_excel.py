@@ -6,7 +6,6 @@ import config
 
 def read_excel_file():
     """Opens Excel file and extracts contents into dataframe"""
-
     # Column index for the room opening/closing data
     col_index = 5
 
@@ -21,7 +20,7 @@ def read_excel_file():
     file_name = os.path.splitext(os.path.basename(file_name))[0]
         
     for key, value in df.items():
-        df_col_2 = value[value[2].str.contains('Colliers|Linwood', case=False) == True]
+        df_col_2 = value[value[2].str.contains('Colliers|Linwood|Downer', case=False) == True]
         df_col_2 = df_col_2[2].str.split(' - ').str[-1].str.lower()
         df_col_2 = df_col_2.str.replace("room ", "")
         value['Room'] = df_col_2.to_string(buf=None,index=False)
@@ -69,7 +68,7 @@ def read_excel_files():
 
     for df in df_dict:
         for key, value in df.items():
-            df_col_2 = value[value[2].str.contains('Colliers|Linwood', case=False) == True]
+            df_col_2 = value[value[2].str.contains('Colliers|Linwood|Downer', case=False) == True]
             df_col_2 = df_col_2[2].str.split(' - ').str[-1].str.lower()
             df_col_2 = df_col_2.str.replace("room ", "")
             value['Room'] = df_col_2.to_string(buf=None,index=False)
