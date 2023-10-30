@@ -27,13 +27,11 @@ def CalculateChargeableTime():
 # Get a list of time differences for each booking with the time from the security report
 def getAllTimeDiffList():
     timeDiffList = []
-    
     for index, row in config.securityDF.iterrows():
         if 'open by' in row[5].lower():          
             timeDiffList.append(getTimeDiffs(row['Room'], row[1], 'Start'))
         elif 'close by' in row[5].lower():         
             timeDiffList.append(getTimeDiffs(row['Room'], row[1], 'End'))
-    
     return timeDiffList
 
 # Calculate the time difference for every booking with the time in security report
@@ -88,7 +86,6 @@ def setActualStartTime(index, setTime, bookingEndTime, isWorkingHours):
     if pd.isna(timeToSet) and (setTime < bookingEndTime):
         if not isWorkingHours:
             timeToSet = setTime
-
     config.bookingsDF.loc[index, 'ActualStart'] = timeToSet
 
 # If outside working hours sets the ActualEnd time to be either the time from the 
